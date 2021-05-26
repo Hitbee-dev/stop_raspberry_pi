@@ -13,7 +13,7 @@
             3byte : body byte length
 
         * Body
-            "Key:Value|Key:Value|...|"
+            "'part':type|Key:Value|...|"
         
         * Value (Example)
             integer : \\i1234 (1234)
@@ -21,6 +21,8 @@
             ":"     : \\cm (:)
             "|"     : \\v (|)
 """
+HEADER_SIZE = 6
+
 def Encode(data):
     packet = ""
     for k, v in data.items():
@@ -34,24 +36,30 @@ def Encode(data):
             v = v.replace("|", "\\v")
         packet += f"{v}|"
     plen = len(packet.encode('utf-8'))
-    packet = (3 - len(str(plen))) * "0" + f"{plen}{packet}"
+    packet = (HEADER_SIZE - len(str(plen))) * "0" + f"{plen}{packet}"
     return packet.encode('utf-8')
 
 
 def Decode(packet):
     data = {}
-    packet = str(packet, encoding='utf-8')
+    packet = packet.decode()
     pdata = packet.split("|")
     for p in pdata:
         part = p.split(":")
-        if len(part) < 2:
+        if len(part[0]) < 1:
             continue
-        part[1] = part[1].replace('\\cm', ':')
-        part[1] = part[1].replace('\\v', '|')
-        if part[1].find("\\i") != -1:
+        if part[1].find("b\'") != -1:
+            part[1] = part[1].encode()
+            part[1] = part[1].replace(b'\\cm', b':')
+            part[1] = part[1].replace(b'\\v', b'|')
+            print(part[1])
+            data[part[0]] = part[1]
+        elif part[1].find("\\i") != -1:
             data[part[0]] = int(part[1][2:])
         elif part[1].find("\\d") != -1:
             data[part[0]] = float(part[1][2:])
         else:
+            part[1] = part[1].replace('\\cm', ':')
+            part[1] = part[1].replace('\\v', '|')
             data[part[0]] = part[1]
     return data

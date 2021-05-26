@@ -9,6 +9,8 @@
 
 import json
 import serversocket
+from mysql.MySQL import MySQL
+import share
 
 config = None
 
@@ -21,8 +23,14 @@ def loadConfig():
         print(e)
         raise Exception('config.json load failed!')
 
+def connectMySQL():
+    global config
+    share.mysql = MySQL(config["mysql"])
+    share.mysql.connect()
+
 def main():
     loadConfig()
+    connectMySQL()
     serverSock = serversocket.createSocket()
     serversocket.listenSocket(serverSock, config["socket"]["host"], config["socket"]["port"])
 

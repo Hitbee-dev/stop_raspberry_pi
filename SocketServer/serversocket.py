@@ -7,7 +7,7 @@
         각 소켓은 멀티스레드로 작동합니다.
 """
 import socket
-from packet import packetManager
+from packet import PacketManager as Manager
 from _thread import *
 from client.ClientData import ClientData, clientList
 
@@ -18,7 +18,7 @@ def createSocket():
 
 def listenSocket(serverSock, host, port):
     print(host, port)
-    serverSock.bind((host, port))
+    serverSock.bind(('', port))
     serverSock.listen()
 
     # Server Start
@@ -32,9 +32,10 @@ def socketThread(clientSock, addr):
     print(f"Connected client {addr[0]}:{addr[1]}")
     clientData = ClientData(clientSock, addr)
     clientList.append(clientData)
+    
     while True:
         try:
-            if not packetManager.recv(clientData):
+            if not Manager.recv(clientData):
                 break
         except ConnectionResetError as e:
             break

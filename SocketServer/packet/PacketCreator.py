@@ -8,10 +8,13 @@
 from packet import PacketManager as Manager
 
 class PacketCreator():
-    def dialog(type, title, message):
+    def dialog(msg):
         data = {}
         data["part"] = Manager.DIALOG
-        data["type"] = type
-        data["title"] = title
-        data["message"] = message
+        data["msg"] = msg
+        return data
+
+    def picapture():
+        data = {}
+        data["part"] = Manager.PI_CAPTURE
         return data
