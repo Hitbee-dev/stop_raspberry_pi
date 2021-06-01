@@ -40,5 +40,5 @@ def socketThread(clientSock, addr):
         except ConnectionResetError as e:
             break
     print(f"Disconnected client {addr[0]}:{addr[1]}")
+    clientData.close()
     clientList.remove(clientData)
-    clientSock.close()

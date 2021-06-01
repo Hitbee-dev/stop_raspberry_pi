@@ -15,6 +15,12 @@ class ClientData():
         self.ip = addr[0]
         self.index = addr[1]
         self.buff = b''
+        self.closeCallback = []
 
     def sendPacket(self, data):
         self.socket.send(Encode(data))
+
+    def close(self):
+        for func in self.closeCallback:
+            func()
+        self.socket.close()

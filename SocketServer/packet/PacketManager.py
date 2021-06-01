@@ -5,23 +5,26 @@
     Desc.
         패킷 상수를 정의하고, 소켓 응답을 받는 부분입니다.
 """
-import packet
-import share
-import cv2
+
 import numpy as np
-import segmentation.predict
-from packet.PacketCreator import PacketCreator
+from packet.PacketHandle import *
 from packet.Protocol import Decode, HEADER_SIZE
-from client.ClientData import ClientData, clientList
+from client.ClientData import clientList
+
 
 #{ PACKET_PART
 DIALOG          = 3
 
-KICKBOARD_CODE  = 100
 USER_LOGIN      = 101
 USER_REGISTER   = 102
 
-PI_CAPTURE      = 200
+KICKBOARD_REQ   = 103
+KICKBOARD_RET   = 104
+KICKBOARD_REGION= 105
+
+
+PI_CONNECT      = 200
+PI_CAPTURE      = 201
 
 
 #} END PACKET_PART
@@ -33,49 +36,48 @@ def broadcast(packet):
 
 # Packet receiver
 def recv(clientData):
-    rbuff = clientData.socket.recv(1024)
-    if not rbuff:
+    try:
+        rbuff = clientData.socket.recv(1024)
+        if not rbuff:
+            return False
+        # Check protocol
+        clientData.buff += rbuff
+        
+        while len(clientData.buff) > 0:
+            psize = int(str(clientData.buff[:HEADER_SIZE], encoding='utf-8'))
+            if len(clientData.buff) >= psize + HEADER_SIZE:
+                data = Decode(clientData.buff[HEADER_SIZE:psize + HEADER_SIZE])
+                clientData.buff = clientData.buff[psize + HEADER_SIZE:]
+                handler(clientData, data)
+            else:
+                break
+    except Exception as e:
+        print("[ERROR]", e)
         return False
-    # Check protocol
-    clientData.buff += rbuff
-    while len(clientData.buff) > 0:
-        psize = int(str(clientData.buff[:HEADER_SIZE], encoding='utf-8'))
-        if len(clientData.buff) >= psize + HEADER_SIZE:
-            data = Decode(clientData.buff[HEADER_SIZE:psize + HEADER_SIZE])
-            clientData.buff = clientData.buff[psize + HEADER_SIZE:]
-            datacase(clientData, data)
-        else:
-            break
 
     return True
 
-def datacase(clientData, data):
-    mysql = share.mysql
+def handler(clientData, data):
+    print("\t[handler]", data)
     part = data["part"]
-    if (part == DIALOG):
-        clientData.sendPacket(PacketCreator.picapture())
+    if (part == USER_LOGIN):
+        user_login(clientData, data)
+
+    if (part == USER_REGISTER):
+        user_register(clientData, data)
 
     if (part == PI_CAPTURE):
-        strData = data["strData"]
-        shape = (data["width"], data["height"])
-        imgdata = np.array(strData.split(","), dtype="uint8")
-        imgdata = np.reshape(imgdata, shape)
-        print(imgdata.shape)
-        img = cv2.imdecode(imgdata, cv2.IMREAD_COLOR)
-        cv2.imwrite('./segmentation/test/jpgs/test.jpg', img)
-        if (segmentation.predict.main()):
-            print("img 판단 시작")
+        pi_capture(clientData, data)
 
-    if (part == KICKBOARD_CODE):
-        clientData.sendPacket(PacketCreator.dialog(f"'{data['code']}' kickboard select!"))
-    
-    if (part == USER_REGISTER):
-        id = data["id"]
-        pw = data["pw"]
-        rows = mysql.query(f"SELECT * FROM user_information WHERE id='{id}';")
-        print(rows)
-        if len(rows) > 0:
-            clientData.sendPacket(PacketCreator.dialog('already id !!'))
-        else:
-            clientData.sendPacket(PacketCreator.dialog('register success !!'))
+    if (part == KICKBOARD_REQ):
+        kickboard_select(clientData, data)
+
+    if (part == KICKBOARD_RET):
+        kickboard_return(clientData, data)
+
+    if (part == KICKBOARD_REGION):
+        kickboard_region(clientData, data)
+
+    if (part == PI_CONNECT):
+        pi_connect(clientData, data)
 

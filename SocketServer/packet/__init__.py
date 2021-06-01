@@ -1,1 +1,1 @@
-__all__ = ['PacketManager', 'Protocol', 'PacketCreator']
+__all__ = ['PacketManager', 'Protocol', 'PacketCreator', 'PacketHandle']
