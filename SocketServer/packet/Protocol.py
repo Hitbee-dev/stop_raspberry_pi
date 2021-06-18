@@ -21,7 +21,7 @@
             ":"     : \\cm (:)
             "|"     : \\v (|)
 """
-HEADER_SIZE = 6
+HEADER_SIZE = 8
 
 def Encode(data):
     packet = ""

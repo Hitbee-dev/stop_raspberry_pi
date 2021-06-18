@@ -40,3 +40,9 @@ class PacketCreator():
         data = {}
         data["part"] = Manager.PI_CAPTURE
         return data
+
+    def dialog(dialog):
+        data = {}
+        data["part"] = Manager.DIALOG
+        data["dialog"] = dialog
+        return data
