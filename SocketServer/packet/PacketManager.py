@@ -13,8 +13,6 @@ from client.ClientData import clientList
 
 
 #{ PACKET_PART
-DIALOG          = 3
-
 USER_LOGIN      = 101
 USER_REGISTER   = 102
 
@@ -25,6 +23,8 @@ KICKBOARD_REGION= 105
 
 PI_CONNECT      = 200
 PI_CAPTURE      = 201
+
+DIALOG          = 300
 
 
 #} END PACKET_PART
@@ -37,7 +37,7 @@ def broadcast(packet):
 # Packet receiver
 def recv(clientData):
     try:
-        rbuff = clientData.socket.recv(1024)
+        rbuff = clientData.socket.recv(65536)
         if not rbuff:
             return False
         # Check protocol
@@ -70,7 +70,7 @@ def handler(clientData, data):
         pi_capture(clientData, data)
 
     if (part == KICKBOARD_REQ):
-        kickboard_select(clientData, data)
+        kickboard_request(clientData, data)
 
     if (part == KICKBOARD_RET):
         kickboard_return(clientData, data)

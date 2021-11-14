@@ -2,6 +2,7 @@ import share
 import cv2
 import numpy as np
 import segmentation.predict
+import time
 from packet.PacketCreator import PacketCreator
 from kickboard.Kickboard import Kickboard, kickboardDict
 from user.UserData import UserData, userDict
@@ -23,7 +24,7 @@ def user_register(clientData, data):
         clientData.sendPacket(PacketCreator.dialog('register success !!'))
 
 
-def kickboard_select(clientData, data):
+def kickboard_request(clientData, data):
     code = data["code"]
     if code in kickboardDict:
         if kickboardDict[code].use == True:
@@ -41,11 +42,9 @@ def kickboard_return(clientData, data):
         if (kickboardDict[code].use == True):
             kickboardDict[code].clientData.sendPacket(PacketCreator.kickboardRegion(clientData.index))
             UserData(clientData)
-            #kickboardDict[code].use = False
-            #kickboardDict[code].clientData.sendPacket(PacketCreator.kickboardRet(2))
-            #clientData.sendPacket(PacketCreator.kickboardRet(2))
         else:
             clientData.sendPacket(PacketCreator.kickboardRet(1))
+            clientData.sendPacket(PacketCreator.dialog(1))
     else:
         clientData.sendPacket(PacketCreator.kickboardRet(0))
 
@@ -65,20 +64,26 @@ def pi_connect(clientData, data):
     code = data["code"]
     Kickboard(clientData, code)
     print(f"[Pi] Kickboard connected {code}")
+    #kickboardDict[code].clientData.sendPacket(PacketCreator.kickboardRegion(clientData.index))
 
 def pi_capture(clientData, data):
     useridx = data["useridx"]
     code = data["code"]
     strData = data["strData"]
-    shape = (data["width"], data["height"])
+    distance = data["distance"]
+    shape = (data["width"], data["height"], 3)
     imgdata = np.array(strData.split(","), dtype="uint8")
     imgdata = np.reshape(imgdata, shape)
     print(imgdata.shape)
-    img = cv2.imdecode(imgdata, cv2.IMREAD_COLOR)
-    cv2.imwrite('./segmentation/test/jpgs/test.jpg', img)
-    if (segmentation.predict.main()):
+    print(distance)
+    cv2.imwrite('./segmentation/test/jpgs/test.jpg', imgdata)
+    if distance == -1:
+        userDict[useridx].clientData.sendPacket(PacketCreator.dialog(2))
+    elif (segmentation.predict.main()):
         if code in kickboardDict:
             if (kickboardDict[code].use == True):
                 kickboardDict[code].use = False
                 kickboardDict[code].clientData.sendPacket(PacketCreator.kickboardRet(2))
+                userDict[useridx].clientData.sendPacket(PacketCreator.dialog(1))
+                time.sleep(1)
                 userDict[useridx].clientData.sendPacket(PacketCreator.kickboardRet(2))
